@@ -23,19 +23,11 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ P0, V, P }) => {
   const pointPRef = useRef<THREE.Points | null>(null);
 
   useEffect(() => {
-    // Initialize camera position and zoom
     camera.position.set(10, 10, 10);
     camera.lookAt(0, 0, 0);
     camera.zoom = 2;
     camera.updateProjectionMatrix();
 
-    // Add axesHelper to the scene if not already added
-    if (!axesHelper.current) {
-      axesHelper.current = new THREE.AxesHelper(10);
-      scene.add(axesHelper.current);
-    }
-
-    // Cleanup function to remove elements
     return () => {
       if (axesHelper.current) {
         scene.remove(axesHelper.current);
@@ -45,15 +37,14 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ P0, V, P }) => {
   }, [scene, camera]);
 
   useEffect(() => {
-    // Remove existing elements before adding new ones
     if (lineRef.current) scene.remove(lineRef.current);
     if (point0Ref.current) scene.remove(point0Ref.current);
     if (pointPRef.current) scene.remove(pointPRef.current);
 
     if (P0 && V && P) {
       const newLine = createLine(P0, V);
-      const newPoint0 = createPoint(P0, 0x00ff00); // Green
-      const newPointP = createPoint(P, 0xff0000); // Red
+      const newPoint0 = createPoint(P0, 0x00ff00);
+      const newPointP = createPoint(P, 0xff0000);
 
       lineRef.current = newLine;
       point0Ref.current = newPoint0;
@@ -65,9 +56,7 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ P0, V, P }) => {
     }
   }, [P0, V, P, scene]);
 
-  useFrame(() => {
-
-  });
+  useFrame(() => { });
 
   function createLine(P0: Vector3, V: Vector3) {
     const lineGeometry = new THREE.BufferGeometry().setFromPoints([
@@ -89,7 +78,6 @@ const ThreeScene: React.FC<ThreeSceneProps> = ({ P0, V, P }) => {
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} />
       <OrbitControls enableDamping dampingFactor={0.25} />
-      {/* Optional: Add arrows to make the axes more visible */}
       <ArrowHelper direction={new THREE.Vector3(1, 0, 0)} length={5} color={0xff0000} />
       <ArrowHelper direction={new THREE.Vector3(0, 1, 0)} length={5} color={0x00ff00} />
       <ArrowHelper direction={new THREE.Vector3(0, 0, 1)} length={5} color={0x0000ff} />
@@ -112,7 +100,7 @@ const ArrowHelper = ({ direction, length, color }: { direction: THREE.Vector3; l
 };
 
 const ThreeCanvas: React.FC<{ P0: Vector3; V: Vector3; P: Vector3 }> = ({ P0, V, P }) => (
-  <Canvas className="w-full h-full">
+  <Canvas className="w-full h-full min-h-[300px] md:min-h-[500px]" style={{ aspectRatio: '16/9' }}>
     <ThreeScene P0={P0} V={V} P={P} />
   </Canvas>
 );

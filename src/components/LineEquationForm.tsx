@@ -1,4 +1,5 @@
-import React, { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
+import Input from './Input';
 
 interface Vector3 {
   x: number;
@@ -11,67 +12,157 @@ interface LineEquationFormProps {
 }
 
 const defaultValues = {
-  P0: '1,2,3',
-  V: '1,0,0',
-  P: '0,1,0'
+  P0: { x: 1, y: 2, z: 3 },
+  V: { x: 1, y: 0, z: 0 },
+  P: { x: 2, y: 2, z: 3 }
 };
 
 function LineEquationForm({ onFormSubmit }: LineEquationFormProps) {
-  const [P0, setP0] = useState<string>(defaultValues.P0);
-  const [V, setV] = useState<string>(defaultValues.V);
-  const [P, setP] = useState<string>(defaultValues.P);
+  const [P0, setP0] = useState(defaultValues.P0);
+  const [V, setV] = useState(defaultValues.V);
+  const [P, setP] = useState(defaultValues.P);
   const [result, setResult] = useState<string>('');
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = (event?: FormEvent<HTMLFormElement>) => {
+    if (event) event.preventDefault();
 
-    const P0Arr = P0.split(',').map(Number);
-    const VArr = V.split(',').map(Number);
-    const PArr = P.split(',').map(Number);
+    const validateVector = (vector: Vector3) =>
+      !isNaN(vector.x) && !isNaN(vector.y) && !isNaN(vector.z);
 
-    if (P0Arr.length === 3 && VArr.length === 3 && PArr.length === 3) {
-      const P0Vector = { x: P0Arr[0], y: P0Arr[1], z: P0Arr[2] };
-      const VVector = { x: VArr[0], y: VArr[1], z: VArr[2] };
-      const PVector = { x: PArr[0], y: PArr[1], z: PArr[2] };
+    if (validateVector(P0) && validateVector(V) && validateVector(P)) {
+      const isPointOnLine = (P0: Vector3, V: Vector3, P: Vector3): boolean => {
+        const epsilon = 1e-6;
+        if (V.x === 0 && V.y === 0 && V.z === 0) return false;
 
-      // Call the prop function to pass the vectors
-      onFormSubmit(P0Vector, VVector, PVector);
+
+        if (P0.x === P.x && P0.y === P.y && P0.z === P.z) return true;
+
+        if (V.x === 0 && P.x !== P0.x) return false;
+        if (V.y === 0 && P.y !== P0.y) return false;
+        if (V.z === 0 && P.z !== P0.z) return false;
+
+        const tX = V.x !== 0 ? (P.x - P0.x) / V.x : NaN;
+        const tY = V.y !== 0 ? (P.y - P0.y) / V.y : NaN;
+        const tZ = V.z !== 0 ? (P.z - P0.z) / V.z : NaN;
+
+        return (
+          (isNaN(tX) || isNaN(tY) || Math.abs(tX - tY) < epsilon) &&
+          (isNaN(tY) || isNaN(tZ) || Math.abs(tY - tZ) < epsilon) &&
+          (isNaN(tX) || isNaN(tZ) || Math.abs(tX - tZ) < epsilon)
+        );
+      };
+
+      if (isPointOnLine(P0, V, P)) {
+        setResult('O ponto está na linha.');
+      } else {
+        setResult('O ponto não está na linha.');
+      }
+
+      onFormSubmit(P0, V, P);
     } else {
-      setResult('Os valores devem ser números válidos separados por vírgulas.');
+      setResult('Os valores devem ser números válidos.');
     }
   };
 
+
+  useEffect(() => {
+    handleSubmit();
+  }, []);
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col space-y-4 p-4 bg-black border border-gray-800 rounded-lg">
-      <h1 className="text-2xl font-bold mb-4">Equação paramétrica da reta</h1>
-      <input
-        type="text"
-        placeholder="Ponto inicial (x,y,z)"
-        value={P0}
-        onChange={(e) => setP0(e.target.value)}
-        className="border rounded-lg py-2 px-3 bg-gray-800 border-indigo-600 placeholder-white text-white"
-      />
-      <input
-        type="text"
-        placeholder="Vetor diretor (x,y,z)"
-        value={V}
-        onChange={(e) => setV(e.target.value)}
-        className="border rounded-lg py-2 px-3 bg-gray-800 border-indigo-600 placeholder-white text-white"
-      />
-      <input
-        type="text"
-        placeholder="Ponto (x,y,z)"
-        value={P}
-        onChange={(e) => setP(e.target.value)}
-        className="border rounded-lg py-2 px-3 bg-gray-800 border-indigo-600 placeholder-white text-white"
-      />
-      <button type="submit" className="border border-indigo-600 bg-black text-white rounded-lg py-2 font-semibold">
-        Verificar
-      </button>
-      <label className={`font-bold text-lg ${result.includes('não') ? 'text-red-600' : 'text-green-600'}`}>
-        {result}
-      </label>
-    </form>
+    <div className="flex flex-col items-center justify-center h-full px-4 sm:px-8">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col space-y-4 bg-slate-950 border border-slate-900 rounded-lg shadow-lg w-full max-w-md p-6 sm:p-8"
+      >
+        <h1 className="text-2xl sm:text-4xl font-bold text-white mb-4">Equação paramétrica da reta</h1>
+
+        {/* Ponto Inicial */}
+        <div className="flex flex-col space-y-2">
+          <label className="text-white font-semibold">Ponto Inicial:</label>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              type="number"
+              placeholder="x"
+              value={P0.x}
+              onChange={(x) => setP0({ ...P0, x })}
+            />
+            <Input
+              type="number"
+              placeholder="y"
+              value={P0.y}
+              onChange={(y) => setP0({ ...P0, y })}
+            />
+            <Input
+              type="number"
+              placeholder="z"
+              value={P0.z}
+              onChange={(z) => setP0({ ...P0, z })}
+            />
+          </div>
+        </div>
+
+        {/* Vetor Diretor */}
+        <div className="flex flex-col space-y-2">
+          <label className="text-white font-semibold">Vetor Diretor:</label>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              type="number"
+              placeholder="x"
+              value={V.x}
+              onChange={(x) => setV({ ...V, x })}
+            />
+            <Input
+              type="number"
+              placeholder="y"
+              value={V.y}
+              onChange={(y) => setV({ ...V, y })}
+            />
+            <Input
+              type="number"
+              placeholder="z"
+              value={V.z}
+              onChange={(z) => setV({ ...V, z })}
+            />
+          </div>
+        </div>
+
+        {/* Ponto */}
+        <div className="flex flex-col space-y-2">
+          <label className="text-white font-semibold">Ponto:</label>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              type="number"
+              placeholder="x"
+              value={P.x}
+              onChange={(x) => setP({ ...P, x })}
+            />
+            <Input
+              type="number"
+              placeholder="y"
+              value={P.y}
+              onChange={(y) => setP({ ...P, y })}
+            />
+            <Input
+              type="number"
+              placeholder="z"
+              value={P.z}
+              onChange={(z) => setP({ ...P, z })}
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className="bg-indigo-600 text-white rounded-lg py-2 font-semibold hover:bg-indigo-700 transition-colors duration-300 w-full"
+        >
+          Verificar
+        </button>
+        <label className={`font-bold text-lg ${result.includes('não') ? 'text-red-500' : 'text-green-500'} text-center`}>
+          {result}
+        </label>
+      </form>
+    </div>
   );
 }
 
